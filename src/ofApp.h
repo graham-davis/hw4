@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxStk.h"
 
 //-----------------------------------------------------------------------------
 // Preprocessor definitions
@@ -32,6 +33,8 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
         void audioIn(float * input, int bufferSize, int nChannels);
+        void audioOut(float * input, int bufferSize, int nChannels);
+
 
     
         ofIcoSpherePrimitive leftSphere;
@@ -43,11 +46,24 @@ class ofApp : public ofBaseApp{
     
         float baseWidth;
         float maxWidth;
+        float minWidth;
         float scale;
+    
+        float rightRotation;
+        float leftRotation;
+        float rotationSpeed;
     
         // Vectors for our left- and right-channel waveforms
         vector<float> left;
         vector<float> right;
+    
+        // STK audio units
+    
+        stk::FileWvIn audio;
+    
+        // Audio processing variables
+        bool playAudio;
+        bool useMic;
     
         static bool abs_compare(int a, int b)
         {
