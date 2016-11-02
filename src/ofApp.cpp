@@ -3,7 +3,7 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     playAudio = false;
-    useMic = false;
+    useMic = true;
     
     // Setup the sound stream
     soundStream.setup(this, MY_CHANNELS, MY_CHANNELS, MY_SRATE, MY_BUFFERSIZE, MY_NBUFFERS);
@@ -23,10 +23,20 @@ void ofApp::setup(){
     ofEnableSmoothing();
     ofBackground(20);
     
-    baseWidth = 80.0;
-    maxWidth = 100.0;
-    minWidth = 70.0;
+    baseWidth = 100.0;
+    maxWidth = 120.0;
+    minWidth = 80.0;
     scale = 30.0;
+    leftRadius = baseWidth;
+    rightRadius = baseWidth;
+    
+    leftGain = 0.05;
+    rightGain = 0.05;
+    leftGainTarget = .5;
+    rightGainTarget = .5;
+    gainInterval = 0.05;
+    gainSmoothers[0].setSmooth(.9992);
+    gainSmoothers[1].setSmooth(.9992);
     
     leftRotation = 0;
     rightRotation = 0;
@@ -34,10 +44,10 @@ void ofApp::setup(){
     
     int res = 2;
     
-    leftSphere.setRadius(baseWidth);
+    leftSphere.setRadius(leftRadius);
     leftSphere.setResolution(res);
     
-    rightSphere.setRadius(baseWidth);
+    rightSphere.setRadius(rightRadius);
     rightSphere.setResolution(res);
     
     ofSetFrameRate(60);
@@ -47,19 +57,19 @@ void ofApp::setup(){
 void ofApp::update(){
     auto leftMaxIndex = max_element(std::begin(left), std::end(left), abs_compare);
     float maxLeftVal = (left[std::distance(left.begin(), leftMaxIndex)]*scale)+baseWidth;
-    float newLeftRadius = (maxLeftVal > maxWidth)? maxWidth : maxLeftVal;
-    if (newLeftRadius < minWidth) {
-        newLeftRadius = minWidth;
+    float leftRadius = (maxLeftVal > maxWidth)? maxWidth : maxLeftVal;
+    if (leftRadius < minWidth) {
+        leftRadius = minWidth;
     }
-    leftSphere.setRadius(newLeftRadius);
+    leftSphere.setRadius(leftRadius*leftGain);
     
     auto rightMaxIndex = max_element(std::begin(right), std::end(right), abs_compare);
     float maxRightVal = (right[std::distance(right.begin(), rightMaxIndex)]*scale)+baseWidth;
-    float newRightRadius = (maxRightVal > maxWidth)? maxWidth : maxRightVal;
-    if (newRightRadius < minWidth) {
-        newRightRadius = minWidth;
+    rightRadius = (maxRightVal > maxWidth)? maxWidth : maxRightVal;
+    if (rightRadius < minWidth) {
+        rightRadius = minWidth;
     }
-    rightSphere.setRadius(newRightRadius);
+    rightSphere.setRadius(rightRadius*rightGain);
     
     leftRotation += rotationSpeed;
     rightRotation -= rotationSpeed;
@@ -68,6 +78,14 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofPushMatrix();
+    
+    // Add instruction text to screen
+    stringstream ss;
+    ss << "Controls:" << "\n\n";
+    ss << "[spacebar]: Play/Pause Audio" << endl << "[left/right]: Left Channel Gain (" << leftGain << ")" << endl << "[up/down]: Right Channel Gain (" << rightGain << ")" << endl;
+    
+    ofDrawBitmapString(ss.str().c_str(), 20, 20);
+    
     
     // Move to center of window
     ofTranslate(ofGetWindowWidth()*0.5, ofGetWindowHeight()*0.5);
@@ -95,11 +113,20 @@ void ofApp::draw(){
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
     if (key == 32) {
-        useMic = false;
-        playAudio = !playAudio;
-    } else if(key == OF_KEY_RETURN) {
-        playAudio = false;
         useMic = !useMic;
+        playAudio = !playAudio;
+    } else if (key == OF_KEY_UP) {
+        rightGainTarget += gainInterval;
+        if (rightGainTarget > 1) rightGainTarget = 1;
+    } else if (key == OF_KEY_DOWN) {
+        rightGainTarget -= gainInterval;
+        if (rightGainTarget < 0.05) rightGainTarget = 0.05;
+    } else if (key == OF_KEY_RIGHT) {
+        leftGainTarget += gainInterval;
+        if (leftGainTarget > 1) leftGainTarget = 1;
+    } else if (key == OF_KEY_LEFT) {
+        leftGainTarget -= gainInterval;
+        if (leftGainTarget < 0.05) leftGainTarget = 0.05;
     }
 }
 
@@ -178,11 +205,13 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels){
         frames.getChannel(1, rightChannel, 0);
 
         for (int i = 0; i < bufferSize ; i++) {
+            leftGain = gainSmoothers[0].tick(leftGainTarget);
             left[i] = leftChannel(i,0);
-            output[2*i] = leftChannel(i,0);
+            output[2*i] = leftChannel(i,0)*leftGain;
             
+            rightGain = gainSmoothers[1].tick(rightGainTarget);
             right[i] = rightChannel(i,0);
-            output[2*i+1] = rightChannel(i,0);
+            output[2*i+1] = rightChannel(i,0)*rightGain;
         }
     }
 }

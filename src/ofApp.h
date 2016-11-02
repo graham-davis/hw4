@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxStk.h"
+#include "smooth.h"
 
 //-----------------------------------------------------------------------------
 // Preprocessor definitions
@@ -49,6 +50,17 @@ class ofApp : public ofBaseApp{
         float minWidth;
         float scale;
     
+        // Audio params for left and right channel
+        float leftGain;
+        float leftGainTarget;
+        float rightGain;
+        float rightGainTarget;
+        float gainInterval;
+        Smooth gainSmoothers[2];
+    
+        // Params for left and right sphere
+        float leftRadius;
+        float rightRadius;
         float rightRotation;
         float leftRotation;
         float rotationSpeed;
