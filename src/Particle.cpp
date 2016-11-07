@@ -18,9 +18,12 @@ Particle::Particle() {
     zVel = 0;
     
     radius = ofRandom(1.0, 7.0);
-    std::cout << radius << std::endl;
     
     dot.setRadius(radius);
+    
+    exploding = false;
+    
+    sun = 0;
 }
 
 Particle::~Particle(){}
@@ -56,4 +59,25 @@ ofVec3f Particle::getVelocity() {
 
 float Particle::getRadius() {
     return radius;
+}
+
+bool Particle::isExploding() {
+    return exploding;
+}
+
+void Particle::explode(int explodingSun) {
+    if (explodingSun == sun) {
+        if (ofRandom(0, 1) > .65) {
+            exploding = true;
+            setVelocity(ofRandom(-50, 50), ofRandom(-50, 50), ofRandom(-50, 50));
+        }
+    }
+}
+
+void Particle::setSun(int newSun) {
+    sun = newSun;
+}
+
+int Particle::getSun() {
+    return sun;
 }

@@ -46,12 +46,16 @@ void ofApp::setup(){
     rotationSpeed = 0.15;
     
     creatingParticles = false;
+    readyToCreate = false;
     numParticles = 0;
-    maxParticles = 300;
+    maxParticles = 257;
     particles.resize(maxParticles);
     particles.clear();
     mouseX = 0;
     mouseY = 0;
+    explodingLeft = false;
+    explodingRight = false;
+    gravity = 0.2;
     
     int res = 2;
     
@@ -61,67 +65,119 @@ void ofApp::setup(){
     rightSphere.setRadius(rightRadius);
     rightSphere.setResolution(res);
     
+    fftLeft = ofxFft::create(MY_BUFFERSIZE, OF_FFT_WINDOW_HAMMING);
+    
     ofSetFrameRate(60);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    // Update FFT
+    fftLeft->setSignal(&left[0]);
+    
+    // Reset exploding
+    explodingLeft = false;
+    explodingRight = false;
+    
+    // Compute left channel max and sphere params
     auto leftMaxIndex = max_element(std::begin(left), std::end(left), abs_compare);
     float maxLeftVal = (left[std::distance(left.begin(), leftMaxIndex)]*scale)+baseWidth;
     float leftRadius = (maxLeftVal > maxWidth)? maxWidth : maxLeftVal;
+    if (maxLeftVal > 125) {
+        explodingLeft = true;
+    }
     if (leftRadius < minWidth) {
         leftRadius = minWidth;
     }
     leftSphere.setRadius(leftRadius*leftGain);
     
+    // Compute right channel max and sphere params
     auto rightMaxIndex = max_element(std::begin(right), std::end(right), abs_compare);
     float maxRightVal = (right[std::distance(right.begin(), rightMaxIndex)]*scale)+baseWidth;
     rightRadius = (maxRightVal > maxWidth)? maxWidth : maxRightVal;
     if (rightRadius < minWidth) {
         rightRadius = minWidth;
     }
+    if (maxRightVal > 125) {
+        explodingRight = true;
+    }
     rightSphere.setRadius(rightRadius*rightGain);
     
+    
+    // Rotate Spheres
     leftRotation += rotationSpeed;
     rightRotation -= rotationSpeed;
     
-    if (creatingParticles) {
+    // Create particles
+    if (readyToCreate && creatingParticles) {
         createParticle();
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    ofPushMatrix();
     
-    ofSetColor(0, 30, 160);
+    ofSetColor(0, 30, 160, 150);
+
+    stringstream ss;
+    ss << "[Left/Right]: Left Gain (" << leftGain << ")\n";
+    ss << "[Up/Down]: Right Gain (" << rightGain << ")\n";
+    ss << "[Shift+Click]: Create Particles (" << numParticles << ")\n";
+    ss << "[+/-]: Gravitational Force (" << gravity << ")\n";
+    ofDrawBitmapString(ss.str().c_str(), 20, 20);
+    
+    ofPushMatrix();
     for (int i = 0; i < particles.size(); i++) {
-        ofVec3f particlePos = particles[i].getPosition();
-        ofVec3f particleVel = particles[i].getVelocity();
-        
-        float d1 = sqrt(pow(particlePos[0]-leftSpherePos[0], 2) + pow(particlePos[1]-leftSpherePos[1], 2) + pow(particlePos[2]-leftSpherePos[2], 2));
-        float d2 = sqrt(pow(particlePos[0]-rightSpherePos[0], 2) + pow(particlePos[1]-rightSpherePos[1], 2) + pow(particlePos[2]-rightSpherePos[2], 2));
-        float leftGrav = (leftGain-.05)/pow(d1, 2);
-        float rightGrav = (rightGain-.05)/pow(d2, 2);
-      
-        int pull = (leftGrav > rightGrav) ? 0 : 1;
-        float xVector = 0;
-        float yVector = 0;
-        float zVector = 0;
-        
-        if (pull == 0) {
-            xVector = (particlePos[0] > leftSpherePos[0]) ? (-1)*GRAVITY : GRAVITY;
-            yVector = (particlePos[1] > leftSpherePos[1]) ? (-1)*GRAVITY : GRAVITY;
-            zVector = (particlePos[2] > leftSpherePos[2]) ? (-1)*GRAVITY : GRAVITY;
-            particles[i].setVelocity(particleVel[0]+xVector, particleVel[1]+yVector, particleVel[2]+zVector);
-        } else {
-            xVector = (particlePos[0] > rightSpherePos[0]) ? (-1)*GRAVITY : GRAVITY;
-            yVector = (particlePos[1] > rightSpherePos[1]) ? (-1)*GRAVITY : GRAVITY;
-            zVector = (particlePos[2] > rightSpherePos[2]) ? (-1)*GRAVITY : GRAVITY;
-            particles[i].setVelocity(particleVel[0]+xVector, particleVel[1]+yVector, particleVel[2]+zVector);
+        float opacity = fftLeft->getAmplitudeAtBin(i)*5000;
+        if (opacity < 10) {
+            opacity = 10;
         }
-        
-        particles[i].draw();
+        ofSetColor(0, 30, 160, opacity);
+        if (!playAudio) {
+            particles[i].setVelocity(0, 0, 0);
+            particles[i].draw();
+        } else if (!particles[i].isExploding()) {
+            if (explodingLeft) {
+                particles[i].explode(0);
+            } else if(explodingRight) {
+                particles[i].explode(1);
+            }
+            ofVec3f particlePos = particles[i].getPosition();
+            ofVec3f particleVel = particles[i].getVelocity();
+            
+            float d1 = sqrt(pow(particlePos[0]-leftSpherePos[0], 2) + pow(particlePos[1]-leftSpherePos[1], 2) + pow(particlePos[2]-leftSpherePos[2], 2));
+            float d2 = sqrt(pow(particlePos[0]-rightSpherePos[0], 2) + pow(particlePos[1]-rightSpherePos[1], 2) + pow(particlePos[2]-rightSpherePos[2], 2));
+            float leftGrav = (leftGain-.05)/pow(d1, 2);
+            float rightGrav = (rightGain-.05)/pow(d2, 2);
+          
+            int pull = (leftGrav > rightGrav) ? 0 : 1;
+            float xVector = 0;
+            float yVector = 0;
+            float zVector = 0;
+            
+            if (pull == 0) {
+                particles[i].setSun(0);
+                xVector = (particlePos[0] > leftSpherePos[0]) ? (-1)*gravity : gravity;
+                yVector = (particlePos[1] > leftSpherePos[1]) ? (-1)*gravity : gravity;
+                zVector = (particlePos[2] > leftSpherePos[2]) ? (-1)*gravity : gravity;
+                particles[i].setVelocity(particleVel[0]+xVector, particleVel[1]+yVector, particleVel[2]+zVector);
+            } else {
+                particles[i].setSun(1);
+                xVector = (particlePos[0] > rightSpherePos[0]) ? (-1)*gravity : gravity;
+                yVector = (particlePos[1] > rightSpherePos[1]) ? (-1)*gravity : gravity;
+                zVector = (particlePos[2] > rightSpherePos[2]) ? (-1)*gravity : gravity;
+                particles[i].setVelocity(particleVel[0]+xVector, particleVel[1]+yVector, particleVel[2]+zVector);
+            }
+            particles[i].draw();
+        } else if(particles[i].isExploding()) {
+            ofVec3f particlePos = particles[i].getPosition();
+            if (abs(particlePos[0]) > 10000) {
+                numParticles--;
+                particles.erase(particles.begin() + i);
+            } else {
+                particles[i].draw();
+            }
+        }
     }
     
     
@@ -162,12 +218,28 @@ void ofApp::keyPressed(int key){
     } else if (key == OF_KEY_LEFT) {
         leftGainTarget -= gainInterval;
         if (leftGainTarget < 0.05) leftGainTarget = 0.05;
+    } else if (key == OF_KEY_SHIFT) {
+        readyToCreate = true;
+    } else if (key == OF_KEY_BACKSPACE) {
+        for(int i = 0; i < numParticles; i++) {
+            particles[i].explode(particles[i].getSun());
+        }
+    } else if (key == 45) {
+        if (gravity > 0.1) {
+            gravity -= 0.05;
+        }
+    } else if (key == 61) {
+        if (gravity < 0.8) {
+            gravity += 0.05;
+        }
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
-
+    if (key == OF_KEY_SHIFT) {
+        readyToCreate = false;
+    }
 }
 
 //--------------------------------------------------------------
@@ -215,15 +287,6 @@ void ofApp::gotMessage(ofMessage msg){
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo dragInfo){ 
 
-}
-
-void ofApp::audioIn(float * input, int bufferSize, int nChannels) {
-    if (useMic) {
-        for (int i = 0; i < bufferSize ; i++) {
-            left[i] = input[2*i];
-            right[i] = input[2*i+1];
-        }
-    }
 }
 
 // Audio functions

@@ -25,6 +25,10 @@ public:
     ofVec3f getPosition();
     ofVec3f getVelocity();
     float getRadius();
+    bool isExploding();
+    void explode(int explodingSun);
+    void setSun(int newSun);
+    int getSun();
 
 private:
     ofIcoSpherePrimitive dot;
@@ -38,6 +42,10 @@ private:
     float xVel;
     float yVel;
     float zVel;
+    
+    bool exploding;
+    
+    int sun;
 };
 
 #endif /* defined(____Particle__) */

@@ -4,6 +4,7 @@
 #include "ofxStk.h"
 #include "smooth.h"
 #include "Particle.h"
+#include "ofxFft.h"
 
 //-----------------------------------------------------------------------------
 // Preprocessor definitions
@@ -14,7 +15,6 @@
 #define MY_BUFFERSIZE    512              // number of frames in a buffer
 #define MY_NBUFFERS      2                // number of buffers latency
 #define MY_PIE           3.14159265358979 // for convenience
-#define GRAVITY          .3
 
 class ofApp : public ofBaseApp{
 
@@ -35,11 +35,8 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
-        void audioIn(float * input, int bufferSize, int nChannels);
         void audioOut(float * input, int bufferSize, int nChannels);
         void createParticle();
-
-
     
         ofIcoSpherePrimitive leftSphere;
         ofIcoSpherePrimitive rightSphere;
@@ -84,14 +81,21 @@ class ofApp : public ofBaseApp{
     
         // Particle variables
         bool creatingParticles;
+        bool readyToCreate;
         int numParticles;
         int maxParticles;
         vector<Particle> particles;
         int mouseX;
         int mouseY;
+        bool explodingLeft;
+        bool explodingRight;
+        float gravity;
     
         static bool abs_compare(int a, int b)
         {
             return (std::abs(a) < std::abs(b));
         }
+    
+        // Fft variables
+        ofxFft *fftLeft;
 };
