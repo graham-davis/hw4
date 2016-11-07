@@ -21,7 +21,7 @@ void ofApp::setup(){
     //ofSetFullscreen(true);
     ofEnableDepthTest();
     ofEnableSmoothing();
-    ofBackground(20);
+    ofBackground(255,255,240);
     
     baseWidth = 100.0;
     maxWidth = 120.0;
@@ -29,6 +29,9 @@ void ofApp::setup(){
     scale = 30.0;
     leftRadius = baseWidth;
     rightRadius = baseWidth;
+    leftSpherePos = ofVec3f(ofGetWindowWidth()*0.5-300, ofGetWindowHeight()*0.5, 0);
+    rightSpherePos = ofVec3f(ofGetWindowWidth()*0.5+300, ofGetWindowHeight()*0.5, 0);
+
     
     leftGain = 0.05;
     rightGain = 0.05;
@@ -41,6 +44,14 @@ void ofApp::setup(){
     leftRotation = 0;
     rightRotation = 0;
     rotationSpeed = 0.15;
+    
+    creatingParticles = false;
+    numParticles = 0;
+    maxParticles = 300;
+    particles.resize(maxParticles);
+    particles.clear();
+    mouseX = 0;
+    mouseY = 0;
     
     int res = 2;
     
@@ -73,39 +84,63 @@ void ofApp::update(){
     
     leftRotation += rotationSpeed;
     rightRotation -= rotationSpeed;
+    
+    if (creatingParticles) {
+        createParticle();
+    }
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofPushMatrix();
     
-    // Add instruction text to screen
-    stringstream ss;
-    ss << "Controls:" << "\n\n";
-    ss << "[spacebar]: Play/Pause Audio" << endl << "[left/right]: Left Channel Gain (" << leftGain << ")" << endl << "[up/down]: Right Channel Gain (" << rightGain << ")" << endl;
-    
-    ofDrawBitmapString(ss.str().c_str(), 20, 20);
+    ofSetColor(0, 30, 160);
+    for (int i = 0; i < particles.size(); i++) {
+        ofVec3f particlePos = particles[i].getPosition();
+        ofVec3f particleVel = particles[i].getVelocity();
+        
+        float d1 = sqrt(pow(particlePos[0]-leftSpherePos[0], 2) + pow(particlePos[1]-leftSpherePos[1], 2) + pow(particlePos[2]-leftSpherePos[2], 2));
+        float d2 = sqrt(pow(particlePos[0]-rightSpherePos[0], 2) + pow(particlePos[1]-rightSpherePos[1], 2) + pow(particlePos[2]-rightSpherePos[2], 2));
+        float leftGrav = (leftGain-.05)/pow(d1, 2);
+        float rightGrav = (rightGain-.05)/pow(d2, 2);
+      
+        int pull = (leftGrav > rightGrav) ? 0 : 1;
+        float xVector = 0;
+        float yVector = 0;
+        float zVector = 0;
+        
+        if (pull == 0) {
+            xVector = (particlePos[0] > leftSpherePos[0]) ? (-1)*GRAVITY : GRAVITY;
+            yVector = (particlePos[1] > leftSpherePos[1]) ? (-1)*GRAVITY : GRAVITY;
+            zVector = (particlePos[2] > leftSpherePos[2]) ? (-1)*GRAVITY : GRAVITY;
+            particles[i].setVelocity(particleVel[0]+xVector, particleVel[1]+yVector, particleVel[2]+zVector);
+        } else {
+            xVector = (particlePos[0] > rightSpherePos[0]) ? (-1)*GRAVITY : GRAVITY;
+            yVector = (particlePos[1] > rightSpherePos[1]) ? (-1)*GRAVITY : GRAVITY;
+            zVector = (particlePos[2] > rightSpherePos[2]) ? (-1)*GRAVITY : GRAVITY;
+            particles[i].setVelocity(particleVel[0]+xVector, particleVel[1]+yVector, particleVel[2]+zVector);
+        }
+        
+        particles[i].draw();
+    }
     
     
     // Move to center of window
     ofTranslate(ofGetWindowWidth()*0.5, ofGetWindowHeight()*0.5);
     ofPushMatrix();
-    
+        ofSetColor(140, 0, 25, 256*leftGain);
+
         // Set style for left sphere
-        ofPushStyle();
-            ofSetColor(100, 100, 100);
-            leftSphere.setPosition(-300, 0, 0);
-            leftSphere.rotate(-rotationSpeed, 0.0, 1.0, 0.0);
-            leftSphere.drawWireframe();
-        ofPopStyle();
+        leftSphere.setPosition(-300, 0, 0);
+        leftSphere.rotate(-rotationSpeed, 0.0, 1.0, 0.0);
+        leftSphere.drawWireframe();
     
-        // Set style for right sphere
-        ofPushStyle();
-            ofSetColor(0, 100, 210);
-            rightSphere.setPosition(300, 0, 0);
-            rightSphere.rotate(rotationSpeed, 0.0, 1.0, 0.0);
-            rightSphere.drawWireframe();
-        ofPopStyle();
+    // Set style for right sphere
+        ofSetColor(140, 0, 25, 256*rightGain);
+
+        rightSphere.setPosition(300, 0, 0);
+        rightSphere.rotate(rotationSpeed, 0.0, 1.0, 0.0);
+        rightSphere.drawWireframe();
 
     ofPopMatrix();
 }
@@ -137,22 +172,24 @@ void ofApp::keyReleased(int key){
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
-
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-
+    mouseX = x;
+    mouseY = y;
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-
+    mouseX = x;
+    mouseY = y;
+    creatingParticles = true;
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-
+    creatingParticles = false;
 }
 
 //--------------------------------------------------------------
@@ -189,7 +226,9 @@ void ofApp::audioIn(float * input, int bufferSize, int nChannels) {
     }
 }
 
+// Audio functions
 //--------------------------------------------------------------
+
 
 void ofApp::audioOut(float * output, int bufferSize, int nChannels){
     // Write to output buffer
@@ -215,3 +254,17 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels){
         }
     }
 }
+
+// Particle functions
+//--------------------------------------------------------------
+
+void ofApp::createParticle() {
+    if (numParticles < maxParticles) {
+        numParticles++;
+        Particle *newParticle = new Particle;
+        newParticle->setPosition(mouseX, mouseY, 0);
+        newParticle->setVelocity(ofRandom(-10, 10), ofRandom(0, 10), ofRandom(-5, 5));
+        particles.insert(particles.begin(), *newParticle);
+    }
+}
+

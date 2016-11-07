@@ -3,6 +3,7 @@
 #include "ofMain.h"
 #include "ofxStk.h"
 #include "smooth.h"
+#include "Particle.h"
 
 //-----------------------------------------------------------------------------
 // Preprocessor definitions
@@ -13,6 +14,7 @@
 #define MY_BUFFERSIZE    512              // number of frames in a buffer
 #define MY_NBUFFERS      2                // number of buffers latency
 #define MY_PIE           3.14159265358979 // for convenience
+#define GRAVITY          .3
 
 class ofApp : public ofBaseApp{
 
@@ -35,6 +37,7 @@ class ofApp : public ofBaseApp{
     
         void audioIn(float * input, int bufferSize, int nChannels);
         void audioOut(float * input, int bufferSize, int nChannels);
+        void createParticle();
 
 
     
@@ -64,6 +67,8 @@ class ofApp : public ofBaseApp{
         float rightRotation;
         float leftRotation;
         float rotationSpeed;
+        ofVec3f leftSpherePos;
+        ofVec3f rightSpherePos;
     
         // Vectors for our left- and right-channel waveforms
         vector<float> left;
@@ -76,6 +81,14 @@ class ofApp : public ofBaseApp{
         // Audio processing variables
         bool playAudio;
         bool useMic;
+    
+        // Particle variables
+        bool creatingParticles;
+        int numParticles;
+        int maxParticles;
+        vector<Particle> particles;
+        int mouseX;
+        int mouseY;
     
         static bool abs_compare(int a, int b)
         {

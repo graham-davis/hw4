@@ -1,0 +1,43 @@
+//
+//  Particle.h
+//  
+//
+//  Created by Graham Davis on 11/6/16.
+//
+//
+
+#ifndef ____Particle__
+#define ____Particle__
+
+#include <string>
+#include <iostream>
+#include "of3dPrimitives.h"
+#include "smooth.h"
+
+class Particle {
+public:
+    Particle();
+    ~Particle();
+    
+    void draw();
+    void setVelocity(float x, float y, float z);
+    void setPosition(int x, int y, int z);
+    ofVec3f getPosition();
+    ofVec3f getVelocity();
+    float getRadius();
+
+private:
+    ofIcoSpherePrimitive dot;
+    
+    float radius;
+    
+    int xPos;
+    int yPos;
+    int zPos;
+    
+    float xVel;
+    float yVel;
+    float zVel;
+};
+
+#endif /* defined(____Particle__) */
