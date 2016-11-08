@@ -35,6 +35,9 @@ private:
     
     float radius;
     
+    ofVec3f pos;
+    ofVec3f vel;
+    
     int xPos;
     int yPos;
     int zPos;

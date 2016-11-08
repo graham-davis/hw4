@@ -29,8 +29,9 @@ void ofApp::setup(){
     scale = 30.0;
     leftRadius = baseWidth;
     rightRadius = baseWidth;
-    leftSpherePos = ofVec3f(ofGetWindowWidth()*0.5-300, ofGetWindowHeight()*0.5, 0);
-    rightSpherePos = ofVec3f(ofGetWindowWidth()*0.5+300, ofGetWindowHeight()*0.5, 0);
+    spheresPos.resize(2);
+    spheresPos[0] = ofVec3f(ofGetWindowWidth()*0.5-300, ofGetWindowHeight()*0.5, 0);
+    spheresPos[1] = ofVec3f(ofGetWindowWidth()*0.5+300, ofGetWindowHeight()*0.5, 0);
 
     
     leftGain = 0.05;
@@ -48,7 +49,7 @@ void ofApp::setup(){
     creatingParticles = false;
     readyToCreate = false;
     numParticles = 0;
-    maxParticles = 257;
+    maxParticles = 100;
     particles.resize(maxParticles);
     particles.clear();
     mouseX = 0;
@@ -56,6 +57,8 @@ void ofApp::setup(){
     explodingLeft = false;
     explodingRight = false;
     gravity = 0.2;
+    sunParticles[0] = 0;
+    sunParticles[0] = 1;
     
     int res = 2;
     
@@ -141,39 +144,38 @@ void ofApp::draw(){
                 particles[i].explode(0);
             } else if(explodingRight) {
                 particles[i].explode(1);
-            }
-            ofVec3f particlePos = particles[i].getPosition();
-            ofVec3f particleVel = particles[i].getVelocity();
-            
-            float d1 = sqrt(pow(particlePos[0]-leftSpherePos[0], 2) + pow(particlePos[1]-leftSpherePos[1], 2) + pow(particlePos[2]-leftSpherePos[2], 2));
-            float d2 = sqrt(pow(particlePos[0]-rightSpherePos[0], 2) + pow(particlePos[1]-rightSpherePos[1], 2) + pow(particlePos[2]-rightSpherePos[2], 2));
-            float leftGrav = (leftGain-.05)/pow(d1, 2);
-            float rightGrav = (rightGain-.05)/pow(d2, 2);
-          
-            int pull = (leftGrav > rightGrav) ? 0 : 1;
-            float xVector = 0;
-            float yVector = 0;
-            float zVector = 0;
-            
-            if (pull == 0) {
-                particles[i].setSun(0);
-                xVector = (particlePos[0] > leftSpherePos[0]) ? (-1)*gravity : gravity;
-                yVector = (particlePos[1] > leftSpherePos[1]) ? (-1)*gravity : gravity;
-                zVector = (particlePos[2] > leftSpherePos[2]) ? (-1)*gravity : gravity;
-                particles[i].setVelocity(particleVel[0]+xVector, particleVel[1]+yVector, particleVel[2]+zVector);
             } else {
-                particles[i].setSun(1);
-                xVector = (particlePos[0] > rightSpherePos[0]) ? (-1)*gravity : gravity;
-                yVector = (particlePos[1] > rightSpherePos[1]) ? (-1)*gravity : gravity;
-                zVector = (particlePos[2] > rightSpherePos[2]) ? (-1)*gravity : gravity;
-                particles[i].setVelocity(particleVel[0]+xVector, particleVel[1]+yVector, particleVel[2]+zVector);
+                ofVec3f particlePos = particles[i].getPosition();
+                ofVec3f particleVel = particles[i].getVelocity();
+                
+                float d1 = abs(particlePos[0]-spheresPos[0][0]) + abs(particlePos[1]-spheresPos[0][1]) + abs(particlePos[2]-spheresPos[0][2]);
+                float d2 = abs(particlePos[0]-spheresPos[1][0]) + abs(particlePos[1]-spheresPos[1][1]) + abs(particlePos[2]-spheresPos[1][2]);
+              
+                int pull = ((leftGain-.05)/d1 > (rightGain-.05)/d2) ? 0 : 1;
+                float xVector = 0;
+                float yVector = 0;
+                float zVector = 0;
+                
+                if (particles[i].getSun() != pull) {
+                    sunParticles[pull]++;
+                    sunParticles[abs(pull-1)]--;
+                    
+                    std::cout << sunParticles[0] << " : " << sunParticles[1] << std::endl;
+                    particles[i].setSun(pull);
+                }
+                
+                xVector = (particlePos[0] > spheresPos[pull][0]) ? -1 : 1;
+                yVector = (particlePos[1] > spheresPos[pull][1]) ? -1 : 1;
+                zVector = (particlePos[2] > spheresPos[pull][2]) ? -1 : 1;
+                particles[i].setVelocity(particleVel[0]+xVector*gravity, particleVel[1]+yVector*gravity, particleVel[2]+zVector*gravity);
             }
             particles[i].draw();
         } else if(particles[i].isExploding()) {
             ofVec3f particlePos = particles[i].getPosition();
-            if (abs(particlePos[0]) > 10000) {
+            if (abs(particlePos[0]) > 1000) {
                 numParticles--;
                 particles.erase(particles.begin() + i);
+                sunParticles[particles[i].getSun()]--;
             } else {
                 particles[i].draw();
             }
@@ -297,7 +299,9 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels){
     // Write to output buffer
     if (playAudio) {
         stk::StkFrames frames(bufferSize,2);
+        stk::StkFrames noiseFrames(bufferSize,1);
         audio.tick(frames);
+        noise.tick(noiseFrames);
 
         stk::StkFrames leftChannel(bufferSize,1);
         // copy the left Channel of 'frames' into `leftChannel`
@@ -305,15 +309,18 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels){
         
         stk::StkFrames rightChannel(bufferSize, 1);
         frames.getChannel(1, rightChannel, 0);
-
+        
+        float nToSL = (float)sunParticles[0]/(maxParticles*5);
+        float nToSR = (float)sunParticles[1]/(maxParticles*5);
+        
         for (int i = 0; i < bufferSize ; i++) {
-            leftGain = gainSmoothers[0].tick(leftGainTarget);
+            leftGain = gainSmoothers[0].tick(leftGainTarget)*(1.0-(nToSL));
             left[i] = leftChannel(i,0);
-            output[2*i] = leftChannel(i,0)*leftGain;
+            output[2*i] = leftChannel(i,0)*leftGain + noiseFrames(i, 0)*nToSL;
             
-            rightGain = gainSmoothers[1].tick(rightGainTarget);
+            rightGain = gainSmoothers[1].tick(rightGainTarget)*(1.0-(nToSR));
             right[i] = rightChannel(i,0);
-            output[2*i+1] = rightChannel(i,0)*rightGain;
+            output[2*i+1] = rightChannel(i,0)*rightGain + noiseFrames(i, 0)*nToSR;
         }
     }
 }
@@ -324,6 +331,7 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels){
 void ofApp::createParticle() {
     if (numParticles < maxParticles) {
         numParticles++;
+        sunParticles[0]++;
         Particle *newParticle = new Particle;
         newParticle->setPosition(mouseX, mouseY, 0);
         newParticle->setVelocity(ofRandom(-10, 10), ofRandom(0, 10), ofRandom(-5, 5));

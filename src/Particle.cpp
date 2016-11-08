@@ -9,13 +9,10 @@
 #include "Particle.h"
 
 Particle::Particle() {
-    xPos = 0;
-    yPos = 0;
-    zPos = 0;
-    
-    xVel = 0;
-    yVel = 0;
-    zVel = 0;
+    for (int i=0; i<3; i++) {
+        pos[i] = 0;
+        vel[i] = 0;
+    }
     
     radius = ofRandom(1.0, 7.0);
     
@@ -29,31 +26,25 @@ Particle::Particle() {
 Particle::~Particle(){}
 
 void Particle::draw() {
-    setPosition(xPos+xVel, yPos+yVel, zPos+zVel);
-    dot.setPosition(xPos, yPos, zPos);
+    setPosition(pos[0]+vel[0], pos[1]+vel[1], pos[2]+vel[2]);
+    dot.setPosition(pos[0], pos[1], pos[2]);
     dot.setRadius(radius);
     dot.draw();
 }
 
 void Particle::setPosition(int x, int y, int z) {
-    xPos = x;
-    yPos = y;
-    zPos = z;
+    pos = ofVec3f(x, y, z);
 }
 
 void Particle::setVelocity(float x, float y, float z) {
-    xVel = x;
-    yVel = y;
-    zVel = z;
+    vel = ofVec3f(x, y, z);
 }
 
 ofVec3f Particle::getPosition() {
-    ofVec3f pos = ofVec3f(xPos, yPos, zPos);
     return pos;
 }
 
 ofVec3f Particle::getVelocity() {
-    ofVec3f vel = ofVec3f(xVel, yVel, zVel);
     return vel;
 }
 

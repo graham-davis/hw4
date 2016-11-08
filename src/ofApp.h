@@ -5,6 +5,7 @@
 #include "smooth.h"
 #include "Particle.h"
 #include "ofxFft.h"
+#include "RadioTower.h"
 
 //-----------------------------------------------------------------------------
 // Preprocessor definitions
@@ -64,8 +65,7 @@ class ofApp : public ofBaseApp{
         float rightRotation;
         float leftRotation;
         float rotationSpeed;
-        ofVec3f leftSpherePos;
-        ofVec3f rightSpherePos;
+        vector<ofVec3f> spheresPos;
     
         // Vectors for our left- and right-channel waveforms
         vector<float> left;
@@ -74,6 +74,7 @@ class ofApp : public ofBaseApp{
         // STK audio units
     
         stk::FileWvIn audio;
+        stk::Noise noise;
     
         // Audio processing variables
         bool playAudio;
@@ -90,6 +91,7 @@ class ofApp : public ofBaseApp{
         bool explodingLeft;
         bool explodingRight;
         float gravity;
+        ofVec2f sunParticles;
     
         static bool abs_compare(int a, int b)
         {
@@ -98,4 +100,7 @@ class ofApp : public ofBaseApp{
     
         // Fft variables
         ofxFft *fftLeft;
+    
+        // RadioTower Variables
+        RadioTower rt;
 };
