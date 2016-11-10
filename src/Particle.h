@@ -13,13 +13,14 @@
 #include <iostream>
 #include "of3dPrimitives.h"
 #include "smooth.h"
+#include "ofGraphics.h"
 
 class Particle {
 public:
     Particle();
     ~Particle();
     
-    void draw();
+    void draw(float opacity);
     void setVelocity(float x, float y, float z);
     void setPosition(int x, int y, int z);
     ofVec3f getPosition();

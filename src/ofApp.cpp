@@ -21,7 +21,7 @@ void ofApp::setup(){
     //ofSetFullscreen(true);
     ofEnableDepthTest();
     ofEnableSmoothing();
-    ofBackground(255,255,240);
+    ofBackground(95,89,93);
     
     baseWidth = 100.0;
     maxWidth = 120.0;
@@ -30,8 +30,8 @@ void ofApp::setup(){
     leftRadius = baseWidth;
     rightRadius = baseWidth;
     spheresPos.resize(2);
-    spheresPos[0] = ofVec3f(ofGetWindowWidth()*0.5-300, ofGetWindowHeight()*0.5, 0);
-    spheresPos[1] = ofVec3f(ofGetWindowWidth()*0.5+300, ofGetWindowHeight()*0.5, 0);
+    spheresPos[0] = ofVec3f(ofGetWindowWidth()*0.5-300, ofGetWindowHeight()*0.4, 0);
+    spheresPos[1] = ofVec3f(ofGetWindowWidth()*0.5+300, ofGetWindowHeight()*0.4, 0);
 
     
     leftGain = 0.05;
@@ -47,9 +47,8 @@ void ofApp::setup(){
     rotationSpeed = 0.15;
     
     creatingParticles = false;
-    readyToCreate = false;
     numParticles = 0;
-    maxParticles = 100;
+    maxParticles = 256;
     particles.resize(maxParticles);
     particles.clear();
     mouseX = 0;
@@ -58,7 +57,7 @@ void ofApp::setup(){
     explodingRight = false;
     gravity = 0.2;
     sunParticles[0] = 0;
-    sunParticles[0] = 1;
+    sunParticles[1] = 0;
     
     int res = 2;
     
@@ -69,14 +68,27 @@ void ofApp::setup(){
     rightSphere.setResolution(res);
     
     fftLeft = ofxFft::create(MY_BUFFERSIZE, OF_FFT_WINDOW_HAMMING);
+    fftRight = ofxFft::create(MY_BUFFERSIZE, OF_FFT_WINDOW_HAMMING);
     
-    ofSetFrameRate(60);
+    showHelp = true;
+    
+    noiseModulator.setSamplingRate(MY_SRATE);
+    modulatorFreq = 60;
+    noiseModulator.setFrequency(modulatorFreq);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    noiseModulator.setFrequency(gravity*modulatorFreq);
+    ww = ofGetWindowWidth();
+    wh = ofGetWindowHeight();
+    
+    spheresPos[0] = ofVec3f(ww*0.5-300, wh*0.5, 0);
+    spheresPos[1] = ofVec3f(ww*0.5+300, wh*0.5, 0);
+    
     // Update FFT
     fftLeft->setSignal(&left[0]);
+    fftRight->setSignal(&right[0]);
     
     // Reset exploding
     explodingLeft = false;
@@ -85,7 +97,7 @@ void ofApp::update(){
     // Compute left channel max and sphere params
     auto leftMaxIndex = max_element(std::begin(left), std::end(left), abs_compare);
     float maxLeftVal = (left[std::distance(left.begin(), leftMaxIndex)]*scale)+baseWidth;
-    float leftRadius = (maxLeftVal > maxWidth)? maxWidth : maxLeftVal;
+    leftRadius = (maxLeftVal > maxWidth)? maxWidth : maxLeftVal;
     if (maxLeftVal > 125) {
         explodingLeft = true;
     }
@@ -112,33 +124,35 @@ void ofApp::update(){
     rightRotation -= rotationSpeed;
     
     // Create particles
-    if (readyToCreate && creatingParticles) {
+    if (creatingParticles) {
         createParticle();
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
+    ofSetColor(255, 159, 158);
     
-    ofSetColor(0, 30, 160, 150);
-
-    stringstream ss;
-    ss << "[Left/Right]: Left Gain (" << leftGain << ")\n";
-    ss << "[Up/Down]: Right Gain (" << rightGain << ")\n";
-    ss << "[Shift+Click]: Create Particles (" << numParticles << ")\n";
-    ss << "[+/-]: Gravitational Force (" << gravity << ")\n";
-    ofDrawBitmapString(ss.str().c_str(), 20, 20);
+    if (showHelp) {
+        stringstream ss;
+        ss << "[Left/Right]: Left Gain (" << leftGain << ")\n";
+        ss << "[Up/Down]: Right Gain (" << rightGain << ")\n";
+        ss << "[Click]: Create Particles (" << numParticles << ")\n";
+        ss << "[+/-]: Gravitational Force (" << gravity << ")\n";
+        ss << "[Space]: Play/Pause Audio\n";
+        ss << "[h]: Show/Hide Help Message\n";
+        ofDrawBitmapString(ss.str().c_str(), 20, 20);
+    }
     
     ofPushMatrix();
     for (int i = 0; i < particles.size(); i++) {
         float opacity = fftLeft->getAmplitudeAtBin(i)*5000;
-        if (opacity < 10) {
-            opacity = 10;
+        if (opacity < 40) {
+            opacity = 40;
         }
-        ofSetColor(0, 30, 160, opacity);
         if (!playAudio) {
             particles[i].setVelocity(0, 0, 0);
-            particles[i].draw();
+            particles[i].draw(opacity);
         } else if (!particles[i].isExploding()) {
             if (explodingLeft) {
                 particles[i].explode(0);
@@ -160,7 +174,6 @@ void ofApp::draw(){
                     sunParticles[pull]++;
                     sunParticles[abs(pull-1)]--;
                     
-                    std::cout << sunParticles[0] << " : " << sunParticles[1] << std::endl;
                     particles[i].setSun(pull);
                 }
                 
@@ -169,7 +182,7 @@ void ofApp::draw(){
                 zVector = (particlePos[2] > spheresPos[pull][2]) ? -1 : 1;
                 particles[i].setVelocity(particleVel[0]+xVector*gravity, particleVel[1]+yVector*gravity, particleVel[2]+zVector*gravity);
             }
-            particles[i].draw();
+            particles[i].draw(opacity);
         } else if(particles[i].isExploding()) {
             ofVec3f particlePos = particles[i].getPosition();
             if (abs(particlePos[0]) > 1000) {
@@ -177,30 +190,25 @@ void ofApp::draw(){
                 particles.erase(particles.begin() + i);
                 sunParticles[particles[i].getSun()]--;
             } else {
-                particles[i].draw();
+                particles[i].draw(opacity);
             }
         }
     }
     
     
-    // Move to center of window
-    ofTranslate(ofGetWindowWidth()*0.5, ofGetWindowHeight()*0.5);
-    ofPushMatrix();
-        ofSetColor(140, 0, 25, 256*leftGain);
+    ofSetColor(255, 159, 158, 256*leftGain);
 
-        // Set style for left sphere
-        leftSphere.setPosition(-300, 0, 0);
-        leftSphere.rotate(-rotationSpeed, 0.0, 1.0, 0.0);
-        leftSphere.drawWireframe();
-    
+    // Set style for left sphere
+    leftSphere.setPosition(spheresPos[0][0], spheresPos[0][1], spheresPos[0][2]);
+    leftSphere.rotate(-rotationSpeed, 0.0, 1.0, 0.0);
+    leftSphere.drawWireframe();
+
     // Set style for right sphere
-        ofSetColor(140, 0, 25, 256*rightGain);
+    ofSetColor(255, 159, 158, 256*rightGain);
 
-        rightSphere.setPosition(300, 0, 0);
-        rightSphere.rotate(rotationSpeed, 0.0, 1.0, 0.0);
-        rightSphere.drawWireframe();
-
-    ofPopMatrix();
+    rightSphere.setPosition(spheresPos[1][0], spheresPos[1][1], spheresPos[1][2]);
+    rightSphere.rotate(rotationSpeed, 0.0, 1.0, 0.0);
+    rightSphere.drawWireframe();
 }
 
 //--------------------------------------------------------------
@@ -220,28 +228,25 @@ void ofApp::keyPressed(int key){
     } else if (key == OF_KEY_LEFT) {
         leftGainTarget -= gainInterval;
         if (leftGainTarget < 0.05) leftGainTarget = 0.05;
-    } else if (key == OF_KEY_SHIFT) {
-        readyToCreate = true;
     } else if (key == OF_KEY_BACKSPACE) {
         for(int i = 0; i < numParticles; i++) {
             particles[i].explode(particles[i].getSun());
         }
     } else if (key == 45) {
-        if (gravity > 0.1) {
-            gravity -= 0.05;
+        if (gravity > 0.04) {
+            gravity -= 0.02;
         }
     } else if (key == 61) {
-        if (gravity < 0.8) {
-            gravity += 0.05;
+        if (gravity < 1.0) {
+            gravity += 0.02;
         }
+    } else if (key == 104) {
+        showHelp = !showHelp;
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
-    if (key == OF_KEY_SHIFT) {
-        readyToCreate = false;
-    }
 }
 
 //--------------------------------------------------------------
@@ -314,13 +319,15 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels){
         float nToSR = (float)sunParticles[1]/(maxParticles*5);
         
         for (int i = 0; i < bufferSize ; i++) {
+            float noiseGain = noiseModulator.tick();
             leftGain = gainSmoothers[0].tick(leftGainTarget)*(1.0-(nToSL));
-            left[i] = leftChannel(i,0);
-            output[2*i] = leftChannel(i,0)*leftGain + noiseFrames(i, 0)*nToSL;
+            left[i] = leftChannel(i,0)*leftGain + noiseFrames(i, 0)*nToSL*noiseGain;
+            output[2*i] = left[i];
             
             rightGain = gainSmoothers[1].tick(rightGainTarget)*(1.0-(nToSR));
-            right[i] = rightChannel(i,0);
-            output[2*i+1] = rightChannel(i,0)*rightGain + noiseFrames(i, 0)*nToSR;
+            right[i] = rightChannel(i,0)*rightGain + noiseFrames(i, 0)*nToSR*noiseGain;
+
+            output[2*i+1] = right[i];
         }
     }
 }
@@ -337,5 +344,30 @@ void ofApp::createParticle() {
         newParticle->setVelocity(ofRandom(-10, 10), ofRandom(0, 10), ofRandom(-5, 5));
         particles.insert(particles.begin(), *newParticle);
     }
+}
+
+// FFT Functions
+
+void ofApp::drawFFT() {
+//    float *fftDataL = fftLeft->getAmplitude();
+//    float *fftDataR = fftRight->getAmplitude();
+//    int numBins = fftLeft->getBinSize();
+//    float vertexWidth = ww/(numBins*2);
+//    ofSetColor(55, 160, 164);
+//    ofNoFill();
+//    
+//    ofBeginShape();
+//    for(int i=0; i<fftLeft->getBinSize(); i++){
+//        ofVertex(vertexWidth*i, wh-(fftDataL[i]*1000), 0);
+//    }
+//    ofVertex(ww/2, wh, 0);
+//    ofEndShape(false);
+//
+//    ofBeginShape();
+//    for(int i=0; i<fftRight->getBinSize(); i++){
+//        ofVertex(ww-(vertexWidth*i), wh-(fftDataR[i]*1000), 0);
+//    }
+//    ofVertex(ww/2, wh, 0);
+//    ofEndShape(false);
 }
 

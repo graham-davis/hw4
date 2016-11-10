@@ -5,7 +5,7 @@
 #include "smooth.h"
 #include "Particle.h"
 #include "ofxFft.h"
-#include "RadioTower.h"
+#include "sine.h"
 
 //-----------------------------------------------------------------------------
 // Preprocessor definitions
@@ -37,12 +37,13 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
     
         void audioOut(float * input, int bufferSize, int nChannels);
-        void createParticle();
     
         ofIcoSpherePrimitive leftSphere;
         ofIcoSpherePrimitive rightSphere;
     
     private:
+        void createParticle();
+        void drawFFT();
         // Our sound stream object
         ofSoundStream soundStream;
     
@@ -82,7 +83,6 @@ class ofApp : public ofBaseApp{
     
         // Particle variables
         bool creatingParticles;
-        bool readyToCreate;
         int numParticles;
         int maxParticles;
         vector<Particle> particles;
@@ -93,14 +93,20 @@ class ofApp : public ofBaseApp{
         float gravity;
         ofVec2f sunParticles;
     
+        float ww;
+        float wh;
+    
         static bool abs_compare(int a, int b)
         {
             return (std::abs(a) < std::abs(b));
         }
     
+        bool showHelp;
+    
         // Fft variables
         ofxFft *fftLeft;
+        ofxFft *fftRight;
     
-        // RadioTower Variables
-        RadioTower rt;
+        Sine noiseModulator;
+        float modulatorFreq;
 };
