@@ -18,7 +18,7 @@ void ofApp::setup(){
     left.resize( MY_BUFFERSIZE, 0 );
     right.resize( MY_BUFFERSIZE, 0 );
     
-    //ofSetFullscreen(true);
+    ofSetFullscreen(true);
     ofEnableDepthTest();
     ofEnableSmoothing();
     ofBackground(95,89,93);
@@ -133,7 +133,8 @@ void ofApp::draw(){
         ss << "[Left/Right]: Left Gain (" << leftGain << ")\n";
         ss << "[Up/Down]: Right Gain (" << rightGain << ")\n";
         ss << "[Click]: Create Particles (" << numParticles << ")\n";
-        ss << "[+/-]: Gravitational Force (" << gravity << ")\n";
+        ss << "[1/2/3]: Explode Particles!\n";
+        ss << "[+/-]: Change Gravitational Force (" << gravity << ")\n";
         ss << "[Space]: Play/Pause Audio\n";
         ss << "[h]: Show/Hide Help Message\n";
         ofDrawBitmapString(ss.str().c_str(), 20, 20);
@@ -223,7 +224,7 @@ void ofApp::keyPressed(int key){
     } else if (key == OF_KEY_LEFT) {
         leftGainTarget -= gainInterval;
         if (leftGainTarget < 0.05) leftGainTarget = 0.05;
-    } else if (key == OF_KEY_BACKSPACE) {
+    } else if (key == 51) {
         for(int i = 0; i < numParticles; i++) {
             particles[i].explode(particles[i].getSun());
         }
