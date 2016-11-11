@@ -5,7 +5,6 @@
 #include "smooth.h"
 #include "Particle.h"
 #include "ofxFft.h"
-#include "sine.h"
 
 //-----------------------------------------------------------------------------
 // Preprocessor definitions
@@ -43,7 +42,6 @@ class ofApp : public ofBaseApp{
     
     private:
         void createParticle();
-        void drawFFT();
         // Our sound stream object
         ofSoundStream soundStream;
     
@@ -106,7 +104,4 @@ class ofApp : public ofBaseApp{
         // Fft variables
         ofxFft *fftLeft;
         ofxFft *fftRight;
-    
-        Sine noiseModulator;
-        float modulatorFreq;
 };

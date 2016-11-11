@@ -39,14 +39,6 @@ private:
     ofVec3f pos;
     ofVec3f vel;
     
-    int xPos;
-    int yPos;
-    int zPos;
-    
-    float xVel;
-    float yVel;
-    float zVel;
-    
     bool exploding;
     
     int sun;

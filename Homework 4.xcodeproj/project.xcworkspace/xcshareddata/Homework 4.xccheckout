@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>227BCA31-BAC4-49F2-99A6-AA0501E806DD</string>
+	<key>IDESourceControlProjectName</key>
+	<string>project</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>08BDF4E0F6DCC18F230C2E0DF69DE5E2C2289CD7</key>
+		<string>https://github.com/graham-davis/hw4.git</string>
+		<key>84CE04532A76281E9D0C7B3A7EFCDC0E12CAC6FA</key>
+		<string>https://github.com/kylemcdonald/ofxFft</string>
+		<key>BCEEAF8E02C432B7195C30F4D32EDE1A69BAF42B</key>
+		<string>https://github.com/companje/ofxBlurShader</string>
+		<key>E5DA4D92130C7B723FB350437C3985BBF83F9A93</key>
+		<string>https://github.com/Ahbee/ofxStk</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>Homework 4.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>08BDF4E0F6DCC18F230C2E0DF69DE5E2C2289CD7</key>
+		<string>../..</string>
+		<key>84CE04532A76281E9D0C7B3A7EFCDC0E12CAC6FA</key>
+		<string>../../../../../addons/ofxFft</string>
+		<key>BCEEAF8E02C432B7195C30F4D32EDE1A69BAF42B</key>
+		<string>../../../../../addons/ofxBlurShader</string>
+		<key>E5DA4D92130C7B723FB350437C3985BBF83F9A93</key>
+		<string>../../../../../addons/ofxStk</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/graham-davis/hw4.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>08BDF4E0F6DCC18F230C2E0DF69DE5E2C2289CD7</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>08BDF4E0F6DCC18F230C2E0DF69DE5E2C2289CD7</string>
+			<key>IDESourceControlWCCName</key>
+			<string>Homework%204</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>BCEEAF8E02C432B7195C30F4D32EDE1A69BAF42B</string>
+			<key>IDESourceControlWCCName</key>
+			<string>ofxBlurShader</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>84CE04532A76281E9D0C7B3A7EFCDC0E12CAC6FA</string>
+			<key>IDESourceControlWCCName</key>
+			<string>ofxFft</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>E5DA4D92130C7B723FB350437C3985BBF83F9A93</string>
+			<key>IDESourceControlWCCName</key>
+			<string>ofxStk</string>
+		</dict>
+	</array>
+</dict>
+</plist>

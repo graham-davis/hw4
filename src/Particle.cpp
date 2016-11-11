@@ -14,7 +14,7 @@ Particle::Particle() {
         vel[i] = 0;
     }
     
-    radius = ofRandom(3.0, 7.0);
+    radius = ofRandom(5, 15);
     
     dot.setRadius(radius);
     
@@ -27,7 +27,7 @@ Particle::~Particle(){}
 
 void Particle::draw(float opacity) {
     setPosition(pos[0]+vel[0], pos[1]+vel[1], pos[2]+vel[2]);
-    ofSetColor(55, 160, 164, 30);
+    ofSetColor(55, 160, 164, opacity);
     ofDrawCircle(pos[0], pos[1], pos[2]+1, radius*1.5);
     ofSetColor(55, 160, 164, opacity);
     ofDrawCircle(pos[0], pos[1], pos[2]+2, radius);

@@ -71,15 +71,10 @@ void ofApp::setup(){
     fftRight = ofxFft::create(MY_BUFFERSIZE, OF_FFT_WINDOW_HAMMING);
     
     showHelp = true;
-    
-    noiseModulator.setSamplingRate(MY_SRATE);
-    modulatorFreq = 60;
-    noiseModulator.setFrequency(modulatorFreq);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    noiseModulator.setFrequency(gravity*modulatorFreq);
     ww = ofGetWindowWidth();
     wh = ofGetWindowHeight();
     
@@ -98,7 +93,7 @@ void ofApp::update(){
     auto leftMaxIndex = max_element(std::begin(left), std::end(left), abs_compare);
     float maxLeftVal = (left[std::distance(left.begin(), leftMaxIndex)]*scale)+baseWidth;
     leftRadius = (maxLeftVal > maxWidth)? maxWidth : maxLeftVal;
-    if (maxLeftVal > 125) {
+    if (maxLeftVal > 120) {
         explodingLeft = true;
     }
     if (leftRadius < minWidth) {
@@ -113,7 +108,7 @@ void ofApp::update(){
     if (rightRadius < minWidth) {
         rightRadius = minWidth;
     }
-    if (maxRightVal > 125) {
+    if (maxRightVal > 120) {
         explodingRight = true;
     }
     rightSphere.setRadius(rightRadius*rightGain);
@@ -187,8 +182,8 @@ void ofApp::draw(){
             ofVec3f particlePos = particles[i].getPosition();
             if (abs(particlePos[0]) > 1000) {
                 numParticles--;
-                particles.erase(particles.begin() + i);
                 sunParticles[particles[i].getSun()]--;
+                particles.erase(particles.begin() + i);
             } else {
                 particles[i].draw(opacity);
             }
@@ -202,7 +197,7 @@ void ofApp::draw(){
     leftSphere.setPosition(spheresPos[0][0], spheresPos[0][1], spheresPos[0][2]);
     leftSphere.rotate(-rotationSpeed, 0.0, 1.0, 0.0);
     leftSphere.drawWireframe();
-
+    
     // Set style for right sphere
     ofSetColor(255, 159, 158, 256*rightGain);
 
@@ -232,7 +227,15 @@ void ofApp::keyPressed(int key){
         for(int i = 0; i < numParticles; i++) {
             particles[i].explode(particles[i].getSun());
         }
-    } else if (key == 45) {
+    }else if (key == 49) {
+        for(int i = 0; i < numParticles; i++) {
+            particles[i].explode(0);
+        }
+    } else if (key == 50) {
+        for(int i = 0; i < numParticles; i++) {
+            particles[i].explode(1);
+        }
+    }else if (key == 45) {
         if (gravity > 0.04) {
             gravity -= 0.02;
         }
@@ -315,18 +318,16 @@ void ofApp::audioOut(float * output, int bufferSize, int nChannels){
         stk::StkFrames rightChannel(bufferSize, 1);
         frames.getChannel(1, rightChannel, 0);
         
-        float nToSL = (float)sunParticles[0]/(maxParticles*5);
-        float nToSR = (float)sunParticles[1]/(maxParticles*5);
+        float nToSL = (float)sunParticles[0]/(maxParticles);
+        float nToSR = (float)sunParticles[1]/(maxParticles);
         
         for (int i = 0; i < bufferSize ; i++) {
-            float noiseGain = noiseModulator.tick();
-            leftGain = gainSmoothers[0].tick(leftGainTarget)*(1.0-(nToSL));
-            left[i] = leftChannel(i,0)*leftGain + noiseFrames(i, 0)*nToSL*noiseGain;
+            leftGain = gainSmoothers[0].tick(leftGainTarget);
+            left[i] = leftChannel(i,0)*leftGain*nToSL;
             output[2*i] = left[i];
             
-            rightGain = gainSmoothers[1].tick(rightGainTarget)*(1.0-(nToSR));
-            right[i] = rightChannel(i,0)*rightGain + noiseFrames(i, 0)*nToSR*noiseGain;
-
+            rightGain = gainSmoothers[1].tick(rightGainTarget);
+            right[i] = rightChannel(i,0)*rightGain*nToSR;
             output[2*i+1] = right[i];
         }
     }
@@ -345,29 +346,3 @@ void ofApp::createParticle() {
         particles.insert(particles.begin(), *newParticle);
     }
 }
-
-// FFT Functions
-
-void ofApp::drawFFT() {
-//    float *fftDataL = fftLeft->getAmplitude();
-//    float *fftDataR = fftRight->getAmplitude();
-//    int numBins = fftLeft->getBinSize();
-//    float vertexWidth = ww/(numBins*2);
-//    ofSetColor(55, 160, 164);
-//    ofNoFill();
-//    
-//    ofBeginShape();
-//    for(int i=0; i<fftLeft->getBinSize(); i++){
-//        ofVertex(vertexWidth*i, wh-(fftDataL[i]*1000), 0);
-//    }
-//    ofVertex(ww/2, wh, 0);
-//    ofEndShape(false);
-//
-//    ofBeginShape();
-//    for(int i=0; i<fftRight->getBinSize(); i++){
-//        ofVertex(ww-(vertexWidth*i), wh-(fftDataR[i]*1000), 0);
-//    }
-//    ofVertex(ww/2, wh, 0);
-//    ofEndShape(false);
-}
-
